@@ -33,16 +33,17 @@ BillSplit Web is a lightweight React application designed to help users split sh
 - Custom CSS (responsive styling)
 
 ## Project Structure
+```
 billsplit-react/
 ├── public/
 ├── src/
-│ ├── App.jsx
-│ ├── App.css
-│ └── main.jsx
+│   ├── App.jsx
+│   ├── App.css
+│   └── main.jsx
 ├── package.json
 ├── vite.config.js
 └── README.md
-
+```
 ## How to Run Locally
 1. Install dependencies:
 - npm install
