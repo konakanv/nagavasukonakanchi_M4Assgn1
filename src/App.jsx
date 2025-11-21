@@ -1,10 +1,6 @@
-// BillSplit Web - React Application
-// This app helps users split shared expenses fairly.
-// Each expense can be split equally or by custom percentage per item.
-// All calculations happen in the browser (no backend or storage).
-
 import React, { useState } from "react";
 import "./App.css";
+import { calculateBalances } from "./billsplitLogic";
 
 function App() {
   // List of people taking part in the split
@@ -24,6 +20,7 @@ function App() {
   // Calculated results
   const [balances, setBalances] = useState(null);
   const [settlements, setSettlements] = useState(null);
+
 
   // Adds a new participant with a unique ID
   function addParticipant() {
@@ -65,8 +62,9 @@ function App() {
     setCurrentPercents({});
   }
 
-  // Creates a new expense entry and saves it in the list and enforces that at least TWO participants are required to split anything.
+
   function addExpense() {
+    // Require at least two participants for any split
     if (participants.length < 2) {
       alert("Add at least two participants before adding an expense.");
       return;
@@ -114,7 +112,7 @@ function App() {
       desc: expenseDesc.trim(),
       amount,
       payerId,
-      splitMode: expenseSplitMode, // 'equal' or 'percent'
+      splitMode: expenseSplitMode,
       percents: percentsForExpense,
     };
 
@@ -133,7 +131,7 @@ function App() {
     setSettlements(null);
   }
 
-  // This function calculates how much each participant owes or should receive.
+  
   function calculate() {
     if (participants.length < 2) {
       alert("You need at least two participants to calculate a split.");
@@ -145,43 +143,13 @@ function App() {
       return;
     }
 
-    const bal = new Map();
-    participants.forEach((p) => bal.set(p.id, 0));
-
-    for (const exp of expenses) {
-      const payerId = exp.payerId;
-      const amount = exp.amount;
-      if (!bal.has(payerId)) continue;
-
-      // Add full amount to the payer
-      bal.set(payerId, bal.get(payerId) + amount);
-
-      const shares = new Map();
-
-      if (exp.splitMode === "equal") {
-        // Equal split: everyone pays the same amount
-        const perPerson = amount / participants.length;
-        participants.forEach((p) => shares.set(p.id, perPerson));
-      } else if (exp.splitMode === "percent" && exp.percents) {
-        // Custom % split: each person pays (percent / 100) * amount
-        participants.forEach((p) => {
-          const percent = exp.percents[p.id] || 0;
-          const share = (percent / 100) * amount;
-          shares.set(p.id, share);
-        });
-      }
-
-      // Subtract each participant's share from their balance
-      shares.forEach((share, id) => {
-        bal.set(id, bal.get(id) - share);
-      });
-    }
+    // Use shared, testable logic from billsplitLogic.js
+    const bal = calculateBalances(participants, expenses);
 
     setBalances(bal);
     setSettlements(computeSettlements(bal, participants));
   }
 
-  // Converts raw balances into a list of who should pay whom.
   function computeSettlements(balances, participants) {
     const creditors = [];
     const debtors = [];
@@ -228,7 +196,6 @@ function App() {
     return result;
   }
 
-  // Each expense can use Equal or Custom % split, chosen per item.
   return (
     <div className="page">
       <div className="app">
@@ -240,7 +207,7 @@ function App() {
             </p>
           </div>
           <p className="muted">
-            No logins Needed.
+            No login.
           </p>
         </header>
 
@@ -268,6 +235,10 @@ function App() {
               {participants.length === 0 ? (
                 <p className="muted">
                   No participants yet. Add at least two to start splitting.
+                </p>
+              ) : participants.length === 1 ? (
+                <p className="muted">
+                  Add one more person to start splitting expenses.
                 </p>
               ) : (
                 participants.map((p) => (
@@ -322,7 +293,6 @@ function App() {
                 value={expenseSplitMode}
                 onChange={(e) => {
                   setExpenseSplitMode(e.target.value);
-                  // Clear custom % fields when switching back to Equal
                   if (e.target.value === "equal") {
                     resetCurrentPercents();
                   }
@@ -372,7 +342,6 @@ function App() {
             <button
               onClick={addExpense}
               className="btn btn-primary mt"
-              // Disable button when there are fewer than two participants
               disabled={participants.length < 2}
             >
               Add Expense
@@ -415,7 +384,6 @@ function App() {
               <button
                 onClick={calculate}
                 className="btn btn-primary"
-                // Also disable calculate until at least two people exist
                 disabled={participants.length < 2 || expenses.length === 0}
               >
                 Calculate
